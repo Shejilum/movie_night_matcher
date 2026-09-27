@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Movie Night Matcher - Find What to Watch Together</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      background-color: #06080e;
+      overflow-x: hidden;
+    }
+    .parallax-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      will-change: transform;
+    }
+    .glass-card {
+      background: rgba(15, 23, 42, 0.82);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85), 0 0 35px rgba(245, 158, 11, 0.05);
+    }
+    .glass-nav {
+      background: rgba(6, 8, 14, 0.8);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .floating-poster {
+      position: absolute;
+      border-radius: 1.25rem;
+      overflow: hidden;
+      box-shadow: 0 20px 35px rgba(0, 0, 0, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      opacity: 0.35;
+      filter: saturate(1.15) contrast(1.05);
+      background-color: #1e293b;
+    }
+    .ambient-glow {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      opacity: 0.35;
+    }
+    .reveal-on-scroll {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal-on-scroll.active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body class="text-slate-100 relative selection:bg-amber-500 selection:text-slate-950 flex flex-col min-h-screen">
+
+  <!-- Fixed Ambient Light Orbs -->
+  <div id="glow-1" class="ambient-glow w-96 h-96 bg-amber-500/20 -top-20 -left-20 fixed"></div>
+  <div id="glow-2" class="ambient-glow w-96 h-96 bg-indigo-600/20 -bottom-20 -right-20 fixed"></div>
+
+  <!-- Top Glassmorphism Navigation Bar -->
+  <header class="fixed top-0 left-0 right-0 z-50 glass-nav">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2.5 group">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-300 flex items-center justify-center text-slate-950 text-lg font-black shadow-md shadow-amber-500/25 group-hover:scale-105 transition transform">
+          🍿
+        </div>
+        <div>
+          <span class="font-extrabold text-white text-base tracking-tight group-hover:text-amber-300 transition">Movie Matcher</span>
+          <span class="hidden sm:inline-block ml-2 text-[10px] font-semibold uppercase tracking-widest bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full">v2.0</span>
+        </div>
+      </a>
+
+      <nav class="flex items-center gap-4 sm:gap-6 text-xs font-semibold text-slate-300">
+        <a href="#how-it-works" class="hover:text-amber-400 transition hidden sm:inline-block">How It Works</a>
+        <a href="#features" class="hover:text-amber-400 transition hidden sm:inline-block">Features</a>
+        <div class="flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 text-[11px] px-3 py-1.5 rounded-xl shadow-inner">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="text-slate-400 font-medium">Engine:</span>
+          <span class="text-white font-mono font-bold">TMDB Live</span>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- HERO & ROOM CREATION SECTION -->
+  <section class="relative h-screen w-full flex items-center justify-center p-4 pt-16 overflow-hidden shrink-0">
+    
+    <!-- Parallax Symmetrical Poster Layer -->
+    <div class="parallax-layer" data-depth="0.04" id="deep-layer">
+      <!-- Left Column (Locked to 5vw) -->
+      <div class="floating-poster w-32 sm:w-40 md:w-44 aspect-[2/3] top-[12vh] left-[5vw] rotate-[-8deg]">
+        <img 
+          src="https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg" 
+          referrerpolicy="no-referrer"
+          crossorigin="anonymous"
+          class="w-full h-full object-cover" 
+          alt="Oppenheimer"
+          onerror="this.onerror=null; this.src='https://placehold.co/400x600/1e293b/f59e0b?text=Oppenheimer';"
+        >
+        <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+      </div>
+
+      <div class="floating-poster w-32 sm:w-40 md:w-44 aspect-[2/3] bottom-[10vh] left-[5vw] rotate-[8deg]">
+        <img 
+          src="https://image.tmdb.org/t/p/w500/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg" 
+          referrerpolicy="no-referrer"
+          crossorigin="anonymous"
+          class="w-full h-full object-cover" 
+          alt="Spider-Man"
+          onerror="this.onerror=null; this.src='https://placehold.co/400x600/1e293b/f59e0b?text=Spider-Man';"
+        >
+        <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+      </div>
+
+      <!-- Right Column (Locked to exact same 5vw margin) -->
+      <div class="floating-poster w-32 sm:w-40 md:w-44 aspect-[2/3] top-[12vh] right-[5vw] rotate-[8deg]">
+        <img 
+          src="https://image.tmdb.org/t/p/w500/d5NXSklXo0qyIYkgV94XAgMIckC.jpg" 
+          referrerpolicy="no-referrer"
+          crossorigin="anonymous"
+          class="w-full h-full object-cover" 
+          alt="Dune"
+          onerror="this.onerror=null; this.src='https://placehold.co/400x600/1e293b/f59e0b?text=Dune';"
+        >
+        <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+      </div>
+
+      <div class="floating-poster w-32 sm:w-40 md:w-44 aspect-[2/3] bottom-[10vh] right-[5vw] rotate-[-8deg]">
+        <img 
+          src="https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg" 
+          referrerpolicy="no-referrer"
+          crossorigin="anonymous"
+          class="w-full h-full object-cover" 
+          alt="Interstellar"
+          onerror="this.onerror=null; this.src='https://placehold.co/400x600/1e293b/f59e0b?text=Interstellar';"
+        >
+        <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+      </div>
+    </div>
+
+    <!-- Parallax Mid Accents -->
+    <div class="parallax-layer hidden xl:block" data-depth="0.07" id="mid-layer">
+      <div class="drift-item absolute top-[48%] left-[7vw] bg-slate-900/90 border border-amber-500/30 text-amber-300 text-xs font-bold px-3.5 py-1.5 rounded-xl backdrop-blur-md flex items-center gap-2 shadow-xl">
+        🎬 <span>Skip the 40-minute scroll</span>
+      </div>
+      <div class="drift-item absolute top-[48%] right-[7vw] bg-slate-900/90 border border-indigo-500/30 text-indigo-300 text-xs font-bold px-3.5 py-1.5 rounded-xl backdrop-blur-md flex items-center gap-2 shadow-xl">
+        ✨ <span>Live WebSocket Match Sync</span>
+      </div>
+    </div>
+
+    <!-- Symmetrically Centered Main Card Container -->
+    <div class="relative z-20 w-full max-w-sm sm:max-w-md my-auto flex justify-center">
+      <main id="main-card" class="glass-card w-full rounded-3xl p-5 sm:p-7 will-change-transform">
+        
+        <!-- Header -->
+        <div class="text-center mb-5 anim-child">
+          <div class="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-300 text-slate-950 text-2xl shadow-xl shadow-amber-500/20 mb-2" id="brand-badge">
+            🍿
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">Movie Matcher</h1>
+          <p class="text-xs text-slate-400 mt-0.5 font-medium">Swipe cards with friends. Find the film everyone likes.</p>
+        </div>
+
+        <!-- Create Room Form -->
+        <form method="POST" action="/" class="space-y-3.5">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="create">
+
+          <div class="anim-child">
+            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Your Name</label>
+            <input 
+              type="text" 
+              name="user_name" 
+              placeholder="e.g. Alex" 
+              required 
+              autocomplete="off"
+              class="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl px-3.5 py-2.5 sm:py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition duration-200"
+            >
+          </div>
+
+          <div class="grid grid-cols-2 gap-2.5 anim-child">
+            <div>
+              <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Genre</label>
+              <select 
+                name="genre" 
+                class="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-400 transition"
+              >
+                <option value="all">All Genres</option>
+                <option value="28">Action</option>
+                <option value="35">Comedy</option>
+                <option value="18">Drama</option>
+                <option value="27">Horror</option>
+                <option value="878">Sci-Fi</option>
+                <option value="16">Animation</option>
+                <option value="53">Thriller</option>
+                <option value="10749">Romance</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Platform</label>
+              <select 
+                name="provider" 
+                class="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-400 transition"
+              >
+                <option value="all">Any Platform</option>
+                <option value="8">Netflix</option>
+                <option value="119">Prime Video</option>
+                <option value="122">Hotstar</option>
+                <option value="2">Apple TV</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="anim-child pt-1">
+            <button 
+              type="submit" 
+              id="btn-create" 
+              class="w-full bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black text-sm py-3 rounded-xl shadow-lg shadow-amber-500/20 active:scale-[0.98] transition flex items-center justify-center gap-2"
+            >
+              <span>Create Filtered Room</span>
+              <svg class="w-4 h-4 stroke-current stroke-[2.5]" fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+              </svg>
+            </button>
+          </div>
+        </form>
+
+        <div class="relative my-4 flex items-center justify-center anim-child">
+          <div class="border-t border-slate-800 w-full"></div>
+          <span class="bg-[#0f172a] px-3 text-[10px] uppercase font-bold tracking-widest text-slate-500 absolute">OR JOIN EXISTING</span>
+        </div>
+
+        <form method="POST" action="/" class="space-y-2 anim-child">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="join">
+          
+          <div class="flex gap-2">
+            <input 
+              type="text" 
+              name="code" 
+              placeholder="ROOM CODE" 
+              required 
+              maxlength="6"
+              autocomplete="off"
+              style="text-transform: uppercase;"
+              class="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-center font-mono font-bold tracking-widest text-amber-300 placeholder-slate-600 focus:outline-none focus:border-amber-400 transition"
+            >
+            <button 
+              type="submit" 
+              id="btn-join"
+              class="bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-bold text-sm px-5 py-2.5 rounded-xl border border-slate-700 active:scale-95 transition"
+            >
+              Join
+            </button>
+          </div>
+        </form>
+      </main>
+    </div>
+
+    <!-- Scroll Down Indicator -->
+    <a href="#how-it-works" class="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 text-slate-400 hover:text-amber-400 transition flex flex-col items-center gap-1 text-[11px] uppercase tracking-wider font-semibold">
+      <span>Explore</span>
+      <div id="scroll-arrow">
+        <svg class="w-4 h-4 stroke-current stroke-2" fill="none" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+        </svg>
+      </div>
+    </a>
+  </section>
+
+  <!-- HOW IT WORKS SECTION -->
+  <section id="how-it-works" class="relative z-20 max-w-5xl mx-auto px-4 sm:px-6 py-24">
+    <div class="text-center max-w-xl mx-auto mb-16 reveal-on-scroll">
+      <span class="text-xs font-bold uppercase tracking-widest text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full">Zero Arguments</span>
+      <h2 class="text-3xl sm:text-4xl font-black text-white mt-3 tracking-tight">How Movie Night Works</h2>
+      <p class="text-slate-400 text-sm mt-2">Pick a genre, invite the group, swipe cards Tinder-style, and watch what wins.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="glass-card rounded-2xl p-6 relative group hover:border-amber-500/40 transition duration-300 reveal-on-scroll">
+        <div class="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-300 font-black text-xl mb-4 group-hover:scale-110 transition">
+          1
+        </div>
+        <h3 class="text-lg font-extrabold text-white">Create a Room</h3>
+        <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+          Set up your room, pick favorite genres or streaming platforms (Netflix, Prime, Hotstar), and get a 6-character room code.
+        </p>
+      </div>
+
+      <div class="glass-card rounded-2xl p-6 relative group hover:border-amber-500/40 transition duration-300 reveal-on-scroll">
+        <div class="w-12 h-12 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-300 font-black text-xl mb-4 group-hover:scale-110 transition">
+          2
+        </div>
+        <h3 class="text-lg font-extrabold text-white">Swipe Together</h3>
+        <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+          Friends join from their phones or browsers. Swipe right to like or left to pass using touch gestures or hotkeys.
+        </p>
+      </div>
+
+      <div class="glass-card rounded-2xl p-6 relative group hover:border-amber-500/40 transition duration-300 reveal-on-scroll">
+        <div class="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-300 font-black text-xl mb-4 group-hover:scale-110 transition">
+          3
+        </div>
+        <h3 class="text-lg font-extrabold text-white">Instant Match</h3>
+        <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+          The moment everyone in the session votes right on the same film, confetti fires and the movie is pinned to your group watch list.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES SECTION -->
+  <section id="features" class="relative z-20 max-w-5xl mx-auto px-4 sm:px-6 pb-24">
+    <div class="glass-card rounded-3xl p-8 sm:p-12 border border-slate-800 reveal-on-scroll">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-full">Built for Speed</span>
+          <h2 class="text-2xl sm:text-3xl font-black text-white mt-3 tracking-tight">Real-Time WebSocket Sync</h2>
+          <p class="text-slate-400 text-xs sm:text-sm mt-3 leading-relaxed">
+            No page refreshes or polling lag. Django Channels synchronizes room presence, swipe actions, auto-paginating movie batches, and match fanfare simultaneously across all connected devices.
+          </p>
+          <div class="mt-6 flex flex-wrap gap-2 text-[11px] font-semibold">
+            <span class="bg-slate-800 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700">⚡ Django Channels</span>
+            <span class="bg-slate-800 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700">🎯 TMDB Discover API</span>
+            <span class="bg-slate-800 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700">🔊 Web Audio Feedback</span>
+            <span class="bg-slate-800 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700">✨ Hammer.js Touch</span>
+          </div>
+        </div>
+
+        <div class="bg-slate-900/90 rounded-2xl p-5 border border-slate-800 space-y-3 shadow-inner">
+          <div class="flex items-center justify-between text-xs pb-2 border-b border-slate-800">
+            <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Active Room Feed</span>
+            <span class="text-emerald-400 font-mono text-[10px] flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Connected
+            </span>
+          </div>
+          <div class="flex items-center gap-3 bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/50">
+            <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-300 flex items-center justify-center text-xs font-bold">🎉</div>
+            <div class="overflow-hidden">
+              <p class="text-xs font-bold text-white truncate">Match Found: Spider-Man: Brand New Day</p>
+              <p class="text-[10px] text-slate-400">All room members voted YES</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/50">
+            <div class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-300 flex items-center justify-center text-xs font-bold">👤</div>
+            <div class="overflow-hidden">
+              <p class="text-xs font-bold text-white truncate">New Member joined room</p>
+              <p class="text-[10px] text-slate-400">Filters: Action & Sci-Fi</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="mt-auto border-t border-slate-900 bg-black/60 backdrop-blur-md relative z-20 py-8 px-4">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
+      <div class="flex items-center gap-2">
+        <span>🍿</span>
+        <span class="font-extrabold text-white">Movie Matcher</span>
+        <span>•</span>
+        <span>Collaborative decision maker for group movie nights</span>
+      </div>
+
+      <div class="flex items-center gap-4 text-[11px]">
+        <a href="#how-it-works" class="hover:text-amber-400 transition">How it works</a>
+        <span>•</span>
+        <a href="https://www.themoviedb.org/" target="_blank" rel="noreferrer" class="hover:text-amber-400 transition">Powered by TMDB</a>
+        <span>•</span>
+        <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="hover:text-white transition font-bold">Back to Top ↑</button>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // 1. Staggered Hero Entrance Animation
+    anime.timeline({ easing: 'easeOutExpo' })
+      .add({
+        targets: '#brand-badge',
+        scale: [0, 1],
+        rotate: [-30, 0],
+        duration: 800,
+      })
+      .add({
+        targets: '.anim-child',
+        opacity: [0, 1],
+        translateY: [18, 0],
+        delay: anime.stagger(50),
+        duration: 600,
+      }, '-=400')
+      .add({
+        targets: '.floating-poster',
+        opacity: [0, 0.35],
+        scale: [0.85, 1],
+        delay: anime.stagger(90),
+        duration: 800,
+      }, '-=450');
+
+    // 2. Idle Floating Loops
+    anime({
+      targets: '.floating-poster',
+      translateY: function(el, i) { return i % 2 === 0 ? [-10, 10] : [10, -10]; },
+      rotate: function(el, i) { return i % 2 === 0 ? ['+=2', '-=2'] : ['-=2', '+=2']; },
+      direction: 'alternate',
+      loop: true,
+      easing: 'easeInOutQuad',
+      duration: function() { return anime.random(3500, 5000); }
+    });
+
+    anime({
+      targets: '.drift-item',
+      translateY: [-6, 6],
+      direction: 'alternate',
+      loop: true,
+      easing: 'easeInOutSine',
+      duration: 3200
+    });
+
+    anime({
+      targets: '#scroll-arrow',
+      translateY: [0, 6],
+      direction: 'alternate',
+      loop: true,
+      easing: 'easeInOutQuad',
+      duration: 800
+    });
+
+    // 3. Smooth Parallax & 3D Tilt Mouse Tracking
+    const card = document.getElementById('main-card');
+    const layers = document.querySelectorAll('.parallax-layer');
+    const glow1 = document.getElementById('glow-1');
+
+    window.addEventListener('mousemove', (e) => {
+      const { innerWidth: width, innerHeight: height } = window;
+      const x = (e.clientX - width / 2);
+      const y = (e.clientY - height / 2);
+
+      const rotX = (y / (height / 2)) * -5;
+      const rotY = (x / (width / 2)) * 5;
+      if (card) {
+        card.style.transform = `perspective(1000px) rotateX(${rotX}deg) rotateY(${rotY}deg) translateZ(8px)`;
+      }
+
+      layers.forEach(layer => {
+        const depth = parseFloat(layer.getAttribute('data-depth')) || 0.04;
+        layer.style.transform = `translate(${x * depth}px, ${y * depth}px)`;
+      });
+
+      if (glow1) {
+        glow1.style.transform = `translate(${x * 0.15}px, ${y * 0.15}px)`;
+      }
+    });
+
+    window.addEventListener('mouseleave', () => {
+      if (card) card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateZ(0)';
+      layers.forEach(layer => {
+        layer.style.transform = 'translate(0px, 0px)';
+      });
+    });
+
+    // 4. Elastic Button Hover Effect
+    const btnCreate = document.getElementById('btn-create');
+    btnCreate.addEventListener('mouseenter', () => {
+      anime({ targets: btnCreate, scale: 1.02, duration: 250, easing: 'easeOutQuad' });
+    });
+    btnCreate.addEventListener('mouseleave', () => {
+      anime({ targets: btnCreate, scale: 1.0, duration: 250, easing: 'easeOutQuad' });
+    });
+
+    // 5. Scroll Reveal Observer for Cards & Sections
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('active');
+        }
+      });
+    }, { threshold: 0.15 });
+
+    document.querySelectorAll('.reveal-on-scroll').forEach(el => observer.observe(el));
+  </script>
+</body>
+</html>
